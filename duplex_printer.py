@@ -1,6 +1,8 @@
 import os
 import sys
+import tempfile
 from PyPDF2 import PdfReader, PdfWriter
+from merge_pdfs import merge_pdfs_with_blank_pages
 
 def ensure_output_dir(output_dir):
     """Create output directory if it doesn't exist"""
@@ -20,6 +22,25 @@ def process_directory(input_dir, output_dir):
             processed += 1
 
     print(f"Processed {processed} PDF files")
+
+def process_directory_with_merge(input_dir, output_dir):
+    """Merge PDFs in directory then process for duplex printing"""
+    # Create temporary file for merged PDF
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+        temp_merged = tmp_file.name
+
+    try:
+        # Merge PDFs first
+        merge_pdfs_with_blank_pages(input_dir, temp_merged)
+
+        # Process the merged PDF
+        output_base = os.path.join(output_dir, "merged")
+        prepare_duplex_pdf(temp_merged, output_base)
+
+    finally:
+        # Clean up temp file
+        if os.path.exists(temp_merged):
+            os.unlink(temp_merged)
 
 def prepare_duplex_pdf(input_pdf_path, output_pdf_path=None):
     try:
@@ -64,13 +85,29 @@ def prepare_duplex_pdf(input_pdf_path, output_pdf_path=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python duplex_printer.py input.pdf|input_dir [output_dir]")
-    else:
-        input_path = sys.argv[1]
-        output_path = sys.argv[2] if len(sys.argv) > 2 else None
+        print("Usage: python duplex_printer.py input.pdf|input_dir [output_dir] [--merge]")
+        print("Options:")
+        print("  --merge    Merge all PDFs in directory before processing")
+        sys.exit(1)
 
-        if os.path.isdir(input_path):
-            output_dir = output_path or os.path.join(os.path.dirname(input_path), 'output')
-            process_directory(input_path, output_dir)
+    input_path = sys.argv[1]
+    args = sys.argv[2:]
+
+    # Parse optional arguments
+    output_path = None
+    merge_first = False
+
+    for arg in args:
+        if arg == '--merge':
+            merge_first = True
         else:
-            prepare_duplex_pdf(input_path, output_path)
+            output_path = arg
+
+    if os.path.isdir(input_path):
+        output_dir = output_path or os.path.join(os.path.dirname(input_path), 'output')
+        if merge_first:
+            process_directory_with_merge(input_path, output_dir)
+        else:
+            process_directory(input_path, output_dir)
+    else:
+        prepare_duplex_pdf(input_path, output_path)
