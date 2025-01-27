@@ -27,10 +27,10 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile --windowed src/app.py
+        Pyinstaller --onefile --clean --icon=icon.ico duplex_printer.py -n FlippinDuplex.exe
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: windows-exe
-        path: dist/*.exe
+        name: FlippinDuplex
+        path: dist/FlippinDuplex.exe

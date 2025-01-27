@@ -34,6 +34,11 @@ def merge_pdfs_with_blank_pages(input_folder, output_file):
         if len(reader.pages) % 2 != 0:
             print(f"Adding blank page after {pdf_file} (odd pages)")
             writer.add_blank_page()
+        # add two blank pages to separate different PDFs
+        if i < len(pdf_files) - 1: # if not the last file
+            print(f"Adding two blank pages to separate {pdf_file} and {pdf_files[i + 1]}")
+            writer.add_blank_page()
+            writer.add_blank_page()
 
     # Save the merged PDF
     with open(output_path, "wb") as output_pdf:
